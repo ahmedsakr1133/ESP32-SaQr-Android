@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- CP2102: 10C4:EA60 -->
+    <usb-device vendor-id="4292" product-id="60096" />
+    <!-- CH340G: 1A86:7523 -->
+    <usb-device vendor-id="6790" product-id="29987" />
+    <!-- FTDI: 0403:6015 -->
+    <usb-device vendor-id="1027" product-id="24597" />
+    <!-- Generic CDC ACM -->
+    <usb-device vendor-id="0" product-id="0" />
+</resources>
