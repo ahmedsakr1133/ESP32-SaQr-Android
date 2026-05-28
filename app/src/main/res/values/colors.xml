@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="windowBg">#0D1117</color>
+    <color name="statusBarBg">#161B22</color>
+    <color name="primaryBg">#161B22</color>
+    <color name="primaryDarkBg">#0D1117</color>
+    <color name="titleText">#58A6FF</color>
+</resources>
