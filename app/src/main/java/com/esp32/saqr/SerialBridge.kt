@@ -1,10 +1,9 @@
 package com.esp32.saqr
 
-import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.webkit.JavascriptInterface
 import com.hoho.android.usbserial.driver.UsbSerialProber
-import com.hoho.android.usbserial.driver.UsbSerialDriver
+import com.hoho.android.usbserial.driver.UsbSerialPort
 import java.io.IOException
 import java.util.concurrent.Executors
 
@@ -13,13 +12,13 @@ class SerialBridge(
     private val onStatus: (String) -> Unit,
     private val onData: (String) -> Unit
 ) {
-    private var driver: UsbSerialDriver? = null
+    private var port: UsbSerialPort? = null
     private val executor = Executors.newSingleThreadExecutor()
     private var running = false
 
     @JavascriptInterface
     fun connect() {
-        if (driver != null) { onStatus("already_connected"); return }
+        if (port != null) { onStatus("already_connected"); return }
 
         val available = UsbSerialProber.getDefaultProber().findAllDrivers(usbManager)
         if (available.isEmpty()) {
@@ -28,33 +27,36 @@ class SerialBridge(
         }
 
         try {
-            val device = available[0].device
+            val driver = available[0]
+            val device = driver.device
             if (!usbManager.hasPermission(device)) {
                 onStatus("need_permission")
                 return
             }
 
-            driver = available[0].apply {
-                usbManager.openDevice(device)?.let { usbSerial ->
-                    port = ports[0]
-                    port.open(usbSerial)
-                    port.setParameters(115200, 8, 1, 0) // baud=115200, data=8, stop=1, parity=none
-                }
+            val usbConnection = usbManager.openDevice(device)
+            if (usbConnection == null) {
+                onStatus("error:failed to open connection")
+                return
             }
 
+            val serialPort = driver.ports[0]
+            serialPort.open(usbConnection)
+            serialPort.setParameters(115200, 8, 1, 0)
+
+            port = serialPort
             running = true
             onStatus("connected")
 
             executor.execute {
                 val buffer = ByteArray(1024)
                 val sb = StringBuilder()
-                while (running && driver != null) {
+                while (running && port != null) {
                     try {
-                        val len = driver!!.port.read(buffer, 100)
+                        val len = port!!.read(buffer, 100)
                         if (len > 0) {
                             val text = String(buffer, 0, len)
                             sb.append(text)
-                            // Send line by line
                             val str = sb.toString()
                             var idx: Int
                             while (str.indexOf('\n').also { idx = it } >= 0) {
@@ -71,7 +73,7 @@ class SerialBridge(
 
         } catch (e: Exception) {
             onStatus("error:${e.message}")
-            driver = null
+            port = null
         }
     }
 
@@ -79,7 +81,7 @@ class SerialBridge(
     fun send(data: String) {
         executor.execute {
             try {
-                driver?.port?.write((data + "\n").toByteArray(), 1000)
+                port?.write((data + "\n").toByteArray(), 1000)
             } catch (_: Exception) {}
         }
     }
@@ -88,10 +90,9 @@ class SerialBridge(
     fun disconnect() {
         running = false
         try {
-            driver?.port?.close()
-            driver?.close()
+            port?.close()
         } catch (_: Exception) {}
-        driver = null
+        port = null
         onStatus("disconnected")
     }
 }
