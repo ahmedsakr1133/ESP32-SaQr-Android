@@ -7,12 +7,19 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
+import android.net.Uri
 import android.os.Bundle
-import android.webkit.WebChromeClient
+import android.view.Menu
+import android.view.MenuItem
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.webkit.WebViewAssetLoader
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 class MainActivity : AppCompatActivity() {
 
@@ -36,37 +43,70 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val htmlPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { loadCustomHtml(it) }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        supportActionBar?.title = "ESP32-SaQr"
 
         usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
-
         registerReceiver(usbReceiver, IntentFilter(ACTION_USB_PERMISSION))
 
         setupWebView()
         setupSerialBridge()
+
+        // Load saved custom HTML or default
+        val savedUri = getSavedHtmlUri()
+        if (savedUri != null) {
+            loadCustomHtml(savedUri)
+        } else {
+            loadDefaultHtml()
+        }
     }
 
     private fun setupWebView() {
         webView = findViewById(R.id.webView)
 
-        // Load HTML from assets via localhost (bypass CORS)
         val assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
             .build()
 
         webView.settings.javaScriptEnabled = true
-        webView.settings.allowFileAccess = true
         webView.settings.domStorageEnabled = true
 
         webView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-                return false
+            override fun shouldInterceptRequest(
+                view: WebView,
+                request: WebResourceRequest
+            ): WebResourceResponse? {
+                return assetLoader.shouldInterceptRequest(request)
             }
         }
+    }
 
+    private fun loadDefaultHtml() {
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+    }
+
+    private fun loadCustomHtml(uri: Uri) {
+        try {
+            val inputStream = contentResolver.openInputStream(uri)
+            val reader = BufferedReader(InputStreamReader(inputStream))
+            val sb = StringBuilder()
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                sb.append(line).append("\n")
+            }
+            reader.close()
+            webView.loadDataWithBaseURL(null, sb.toString(), "text/html", "UTF-8", null)
+            saveHtmlUri(uri)
+            supportActionBar?.subtitle = uri.lastPathSegment ?: "مخصص"
+        } catch (e: Exception) {
+            webView.evaluateJavascript("AndroidUSB.onStatus('error:${e.message}')", null)
+        }
     }
 
     private fun setupSerialBridge() {
@@ -86,6 +126,50 @@ class MainActivity : AppCompatActivity() {
         )
 
         webView.addJavascriptInterface(serialBridge!!, "AndroidSerial")
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_open_html -> {
+                htmlPicker.launch(arrayOf("text/html", "text/*"))
+                true
+            }
+            R.id.action_reset_html -> {
+                clearSavedHtmlUri()
+                supportActionBar?.subtitle = null
+                loadDefaultHtml()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun saveHtmlUri(uri: Uri) {
+        getPreferences(Context.MODE_PRIVATE).edit()
+            .putString("html_uri", uri.toString())
+            .apply()
+    }
+
+    private fun getSavedHtmlUri(): Uri? {
+        val uriStr = getPreferences(Context.MODE_PRIVATE)
+            .getString("html_uri", null) ?: return null
+        return Uri.parse(uriStr)
+    }
+
+    private fun clearSavedHtmlUri() {
+        getPreferences(Context.MODE_PRIVATE).edit()
+            .remove("html_uri")
+            .apply()
+    }
+
+    @Deprecated("Use registerForActivityResult API")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onDestroy() {
