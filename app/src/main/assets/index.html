@@ -7,43 +7,44 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;padding-bottom:60px}
-.header{background:#161b22;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #30363d;position:sticky;top:0;z-index:100}
-.header h1{margin:0;font-size:16px;color:#58a6ff}
-#status-badge{padding:3px 10px;border-radius:10px;font-size:11px;background:#da3633;color:#fff}
-#connect-bar{background:#1f6feb;color:#fff;text-align:center;padding:12px;font-weight:700;font-size:14px;cursor:pointer;position:sticky;top:0;z-index:99}
+.header{background:#161b22;padding:10px 14px;border-bottom:1px solid #30363d}
+.header h1{font-size:16px;color:#58a6ff;display:inline}
+#status-badge{float:left;padding:3px 10px;border-radius:10px;font-size:11px;background:#da3633;color:#fff}
+#connect-bar{background:#1f6feb;color:#fff;text-align:center;padding:12px;font-weight:700;font-size:14px;cursor:pointer}
 #connect-bar.connected{background:#238636}
-.tabs{display:flex;background:#161b22;border-bottom:1px solid #30363d}
-.tab{flex:1;padding:10px;background:none;border:none;color:#8b949e;font-size:14px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;outline:none}
+.tabs{border-bottom:1px solid #30363d;overflow:hidden;background:#161b22}
+.tab{float:right;width:20%;padding:10px;background:none;border:none;color:#8b949e;font-size:14px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent;outline:none}
 .tab.active{color:#58a6ff;border-bottom:2px solid #58a6ff;font-weight:600}
 .tab-content{display:none;padding:10px}
 .tab-content.active{display:block}
 .section{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:6px 10px 10px;margin:8px 0}
 .section-title{font-size:12px;font-weight:600;color:#8b949e;padding:6px 0 4px}
-.btns{display:flex;flex-wrap:wrap;gap:5px}
-.btns button{flex:1 1 calc(50% - 5px);padding:12px 4px;background:#21262d;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:13px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.btns{overflow:hidden}
+.btns button{width:48%;padding:12px 4px;margin:2px 1%;background:#21262d;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;font-size:13px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
 .btns button:active{background:#30363d}
-.evp-form{display:flex;gap:6px;padding:4px 0}
-.evp-form input,.evp-form select{flex:1;padding:8px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#c9d1d9;font-size:13px}
-.evp-form button{padding:8px 12px;background:#1f6feb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600}
+.evp-form{padding:4px 0}
+.evp-form input,.evp-form select{padding:8px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#c9d1d9;font-size:13px;width:100%;margin-bottom:4px}
+.evp-form button{width:100%;padding:8px;background:#1f6feb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600}
+.evp-form button.green{background:#238636}
+.evp-form button.red{background:#da3633}
 .stop-btn{background:#da3633;color:#fff;text-align:center;padding:16px;border-radius:8px;font-size:18px;font-weight:700;cursor:pointer;margin:8px 0}
 #log{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px;margin:8px 0;font-size:11px;font-family:monospace;color:#8b949e;height:120px;overflow-y:auto;direction:ltr;text-align:left}
-.card{background:#161b22;border:1px solid #30363d;border-radius:8px}
-.card-header{padding:8px 12px;font-weight:600;font-size:12px;border-bottom:1px solid #30363d;background:#21262d}
-.card-body{padding:8px 12px;font-size:12px;line-height:1.6}
-#rf-codes{font-size:12px}
 </style>
 </head>
 <body>
 
-<div class='header'><h1>ESP32-SaQr</h1><span id='status-badge'>غير متصل</span></div>
+<div class='header'>
+  <h1>ESP32-SaQr</h1>
+  <span id='status-badge'>غير متصل</span>
+</div>
 <div id='connect-bar' onclick='doConnect()'>🔌 ربط USB</div>
 
 <div class='tabs'>
-<button class='tab active' onclick='showTab("wifi")'>WiFi</button>
-<button class='tab' onclick='showTab("ir")'>IR</button>
-<button class='tab' onclick='showTab("rf")'>RF</button>
-<button class='tab' onclick='showTab("rgb")'>RGB</button>
-<button class='tab' onclick='showTab("device")'>جهاز</button>
+<button class='tab active' data-tab='wifi' onclick='showTab(this)'>WiFi</button>
+<button class='tab' data-tab='ir' onclick='showTab(this)'>IR</button>
+<button class='tab' data-tab='rf' onclick='showTab(this)'>RF</button>
+<button class='tab' data-tab='rgb' onclick='showTab(this)'>RGB</button>
+<button class='tab' data-tab='device' onclick='showTab(this)'>جهاز</button>
 </div>
 
 <div id='tab-wifi' class='tab-content active'>
@@ -58,8 +59,8 @@ body{font-family:'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;padding-
 <div id='tab-ir' class='tab-content'>
 <div class='section'><div class='section-title'>إرسال IR</div>
 <div class='evp-form'>
-<input type='text' id='ir-hex' placeholder='Hex (مثال FF38C7)' style='flex:1' dir='ltr'>
-<button onclick='sendIR()' style='background:#238636'>إرسال</button>
+<input type='text' id='ir-hex' placeholder='Hex (مثال FF38C7)' dir='ltr'>
+<button class='green' onclick='sendIR()'>إرسال</button>
 </div></div>
 </div>
 
@@ -70,10 +71,10 @@ body{font-family:'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;padding-
 <button onclick='send("rf -clear")'>مسح</button>
 </div>
 <div class='evp-form' style='margin-top:6px'>
-<input type='number' id='bf-s' placeholder='بداية' value='0' style='flex:1' dir='ltr'>
-<input type='number' id='bf-e' placeholder='نهاية' value='1000' style='flex:1' dir='ltr'>
-<input type='number' id='bf-b' placeholder='بت' value='24' style='width:50px' dir='ltr'>
-<button onclick='send("rf -b "+v("bf-s")+" "+v("bf-e")+" "+v("bf-b"))' style='background:#da3633'>هجوم</button>
+<input type='text' id='bf-s' placeholder='بداية' value='0' dir='ltr'>
+<input type='text' id='bf-e' placeholder='نهاية' value='1000' dir='ltr'>
+<input type='text' id='bf-b' placeholder='بت' value='24' dir='ltr'>
+<button class='red' onclick='send("rf -b "+v("bf-s")+" "+v("bf-e")+" "+v("bf-b"))'>هجوم</button>
 </div>
 <div id='rf-codes'></div></div>
 </div>
@@ -108,22 +109,21 @@ body{font-family:'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;padding-
 var connected=false;
 
 function v(id){return document.getElementById(id).value}
+
 function log(t){
   var el=document.getElementById('log');
   el.innerHTML+=t+'<br>';
   el.scrollTop=el.scrollHeight;
 }
 
-function showTab(n){
+function showTab(btn){
+  var tabName=btn.getAttribute('data-tab');
   var ts=document.getElementsByClassName('tab');
   for(var i=0;i<ts.length;i++)ts[i].className='tab';
+  btn.className='tab active';
   var cs=document.getElementsByClassName('tab-content');
   for(var i=0;i<cs.length;i++)cs[i].className='tab-content';
-  document.getElementById('tab-'+n).className='tab-content active';
-  for(var i=0;i<ts.length;i++){
-    if(ts[i].getAttribute('onclick').indexOf("'"+n+"'")>-1)
-      ts[i].className='tab active';
-  }
+  document.getElementById('tab-'+tabName).className='tab-content active';
 }
 
 function doConnect(){
@@ -141,9 +141,10 @@ function send(cmd){
 }
 
 function sendIR(){
-  var code=document.getElementById('ir-hex').value.trim();
-  if(!code)return;
-  if(code.toUpperCase().startsWith('0X'))code=code.substring(2);
+  var code=document.getElementById('ir-hex').value;
+  code=code.replace(/^\s+|\s+$/g,'');
+  if(code=='')return;
+  if(code.toUpperCase().indexOf('0X')===0)code=code.substring(2);
   send('HEX:'+code);
 }
 
@@ -189,17 +190,14 @@ var AndroidUSB={
       badge.style.background='#da3633';
       connected=false;
       log('🔌 قطع الاتصال');
-    } else if(s.startsWith('error:')){
+    } else if(s.indexOf('error:')===0){
       log('❌ '+s);
     }
   },
   onData:function(d){
     log('← '+d);
-    // Parse RF list output
     if(d.indexOf('codes stored')>-1){
-      // will be followed by code lines
     } else if(d.match(/\[(\d+)\]/)){
-      // it's a code line, rf-codes already shows via log
     }
   },
   onPermission:function(g){
