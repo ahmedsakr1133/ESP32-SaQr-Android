@@ -1,6 +1,5 @@
 package com.esp32.saqr
 
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -82,7 +81,7 @@ class MainActivity : AppCompatActivity() {
                 view: WebView,
                 request: WebResourceRequest
             ): WebResourceResponse? {
-                return assetLoader.shouldInterceptRequest(request)
+                return assetLoader.shouldInterceptRequest(request.url)
             }
         }
     }
@@ -165,11 +164,6 @@ class MainActivity : AppCompatActivity() {
         getPreferences(Context.MODE_PRIVATE).edit()
             .remove("html_uri")
             .apply()
-    }
-
-    @Deprecated("Use registerForActivityResult API")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onDestroy() {
